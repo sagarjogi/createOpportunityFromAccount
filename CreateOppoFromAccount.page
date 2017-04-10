@@ -1,0 +1,178 @@
+<!--
+Created by :- Sagar Jogi  07th April 2017
+-->
+<apex:page standardController="Account" extensions="CreateOppoFromAccountCtrl"  showHeader="false" sidebar="false">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js" type="text/javascript"/>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.6.1/angular.min.js" type="text/javascript"/>
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.0.0-alpha.6/css/bootstrap.css" />
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.0.0-alpha.6/css/bootstrap.min.css" />
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" />
+    
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" ></script>
+    <script>
+       var app = angular.module('createOppAPP', []);
+        app.controller('createOpportunityCtrl', function($scope) {
+            $scope.accountdetail = {!accountJSON};
+            $scope.opportunityList = {!opportunityListJSON};
+            $scope.stageList = {!stageListJSON};
+            
+            //If no existing opportunity
+            if($scope.opportunityList.length == 0) {
+                 var newOpp =  new Object ();
+                newOpp.Name = null;
+                newOpp.StageName = null;
+                newOpp.CloseDate = null;
+                console.log($scope.accountdetail.Id);
+                newOpp.AccountId = $scope.accountdetail.Id;
+                $scope.opportunityList.push(newOpp);
+            }
+            
+            //Function for Converting date into string format
+            $scope.convertDate = function (closedate) {
+                var inputDate = new Date(closedate);
+                var month = String(inputDate.getMonth() + 1);
+                var day = String(inputDate.getDate());
+                var year = String(inputDate.getFullYear());
+                if(month.length <2) {
+                    month = '0'+month;
+                }
+                if(day.length <2) {
+                    day = '0'+day;
+                }
+                var parseddate = year +'-'+month+'-'+day;
+                return parseddate ;
+            }
+            
+            $scope.hasError = false;
+            
+            //Function to validate data 
+            
+            $scope.validateData = function () {
+                // console.log($scope.opportunityList);
+                $scope.hasError = false;
+                for(var i=0; i<$scope.opportunityList.length;i++) {
+                      console.log($scope.opportunityList[i].CloseDate);
+                      console.log($scope.opportunityList[i].StageName );
+                      console.log($scope.opportunityList[i].Name );
+                      if($scope.opportunityList[i].CloseDate == null ||  
+                          $scope.opportunityList[i].StageName == null || 
+                          $scope.opportunityList[i].Name == null ||
+                          $scope.opportunityList[i].CloseDate == ''||  
+                          $scope.opportunityList[i].StageName == '' || 
+                          $scope.opportunityList[i].Name == '') {
+                          $scope.hasError = true;
+                      }
+                    
+                }
+                if(!$scope.hasError) {
+                   $scope.saveOpportunity();
+                }
+            }
+            
+            
+            //Function for save opportunity
+            $scope.saveOpportunity = function () {
+               // console.log($scope.opportunityList);
+                for(var i=0; i<$scope.opportunityList.length;i++) {
+                        $scope.opportunityList[i].CloseDate = $scope.convertDate($scope.opportunityList[i].CloseDate);
+                    
+                }
+                console.log($scope.opportunityList);
+                Visualforce.remoting.Manager.invokeAction(
+                    '{!$RemoteAction.CreateOppoFromAccountCtrl.saveOpportunity }',
+                    JSON.stringify($scope.opportunityList) , 
+                    function(result, event){
+                        if (event.status) {
+                           window.location = '/'+$scope.accountdetail.Id;
+                        } 
+                    }, 
+                    {escape: true}
+                );
+            }
+            
+            $scope.addOpportunity = function () {
+                var newOpp =  new Object ();
+                newOpp.Name = null;
+                newOpp.StageName = null;
+                newOpp.CloseDate = null;
+                console.log($scope.accountdetail.Id);
+                newOpp.AccountId = $scope.accountdetail.Id;
+                $scope.opportunityList.push(newOpp);
+            }
+            
+            $scope.deleteOpportunity = function (index) {
+               $scope.opportunityList.splice(index, 1);
+
+            }
+        
+         });
+    </script>
+
+  
+    <body ng-controller="createOpportunityCtrl" ng-app="createOppAPP" ng-cloak="true" style="margin-left: 20px;margin-right: 20px;">
+       <div>
+           <h2> Account Information </h2>
+           <hr />
+           <table  class="table table-bordered">
+               <tr>
+                   <td> Account Name </td>
+                   <td> {{accountdetail.Name}} </td>
+               </tr>
+               <tr>
+                   <td> Phone </td>
+                   <td> {{accountdetail.Phone}} </td>
+               </tr>
+                <tr>
+                   <td> Billing Country </td>
+                   <td> {{accountdetail.Billing_State__c}} </td>
+               </tr>
+           </table>
+       </div>
+       <hr />
+       <div>
+           <h2>Opportunity </h2>
+           <hr/>
+           <br/>
+           
+          
+            <div ng-if="hasError" style="color:red">
+              <h4> Please Provide all required data.</h4>
+              <br/>
+              <br/>
+              <br/>
+            </div>
+           
+           <table class="table table-bordered">
+               <thead>
+                   <tr >
+                       <td>Name</td>
+                       <td>StageName</td>
+                       <td>CloseDate</td>
+                       <td>Action</td>
+                   </tr>
+               </thead>
+               <tbody>
+                   <tr  ng-repeat = "opp in opportunityList track by $index">
+                       <td ng-if="opp.Id != null">{{opp.Name}}</td>
+                       <td ng-if="opp.Id != null">{{opp.StageName}}</td>
+                       <td ng-if="opp.Id != null">{{opp.CloseDate}} </td>
+                       <td ng-if="opp.Id == null"><input type='text' ng-model="opp.Name" /></td>
+                       <td ng-if="opp.Id == null">
+                           <select ng-model="opp.StageName">
+                               <option ng-repeat = "opp in stageList" value="opp.key">
+                               {{opp.value}}
+                               </option>
+                           </select>
+                       </td>
+                       <td ng-if="opp.Id == null"><input type='date' ng-model="opp.CloseDate" /></td>
+                       <td ng-if="!$last"> <button ng-click="deleteOpportunity($index)" ng-if="opp.Id == null">Delete</button> </td>
+                       <td ng-if="$last"><button ng-click="addOpportunity()">Add</button> <button ng-click="deleteOpportunity($index)" ng-if="opp.Id == null">Delete</button> </td>
+                   </tr>
+               </tbody>
+           </table>
+           <button ng-click="validateData ()"> Save</button>
+       </div>
+       
+    </body>
+</apex:page>
